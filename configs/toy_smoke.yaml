@@ -1,0 +1,26 @@
+data:
+  train_data: configs/toy_train.jsonl
+  max_audio_seconds: 30
+  train_max_samples: 4
+  shuffle: false
+
+adapters:
+  student: toy
+  teacher: toy
+  options:
+    student:
+      vocab_size: 16
+      hidden_size: 32
+    teacher:
+      vocab_size: 16
+
+training:
+  output_dir: runs/toy_smoke
+  seed: 1
+  max_steps: 1
+  per_device_train_batch_size: 2
+  learning_rate: 0.001
+  opd_top_k: 4
+  opd_temperature: 1.0
+  max_new_tokens: 4
+  device: cpu
