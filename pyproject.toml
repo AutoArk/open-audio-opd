@@ -26,6 +26,7 @@ dependencies = [
   "tensordict>=0.8.0,<=0.10.0,!=0.9.0",
   "packaging>=20.0",
   "tensorboard",
+  "tqdm>=4.66",
 ]
 
 [project.optional-dependencies]
@@ -36,6 +37,9 @@ dev = [
 ]
 vllm = [
   "vllm>=0.8.5,<=0.11.0",
+]
+eval = [
+  "jiwer>=3.0",
 ]
 
 [build-system]

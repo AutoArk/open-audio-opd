@@ -98,6 +98,66 @@ pip install -e ".[vllm]"
 
 脚本遇到缺失音频会直接报错，不会用 fallback 音频静默替换坏样本。
 
+## 推理
+
+只做 ASR 推理、不计算指标：
+
+```bash
+python scripts/infer/ark_asr_transformers.py \
+  --input /path/to/input.jsonl \
+  --output runs/infer/predictions.jsonl \
+  --model_path /path/to/student_or_exported_model \
+  --processor_path /path/to/student_or_exported_model \
+  --batch_size 40 \
+  --dtype float16 \
+  --attn_impl sdpa
+```
+
+输出 JSONL 会保留输入 metadata，并新增：
+
+- `pred_text`: 清洗后的预测文本；
+- `pred_text_raw`: 清洗前的原始 decode 文本。
+
+## 评测
+
+对单个 JSONL 运行 J/WER 评测：
+
+```bash
+python scripts/eval/eval_jwer_ark_asr_transformers.py \
+  --input /path/to/test_aishell.jsonl \
+  --output runs/eval/test_aishell_result.jsonl \
+  --model_path /path/to/student_or_exported_model \
+  --processor_path /path/to/student_or_exported_model \
+  --batch_size 40 \
+  --dtype float16 \
+  --attn_impl sdpa
+```
+
+评测输出会按 `cer_errors` 从高到低排序，方便优先查看 bad case。每行包含
+`ref_text`、`pred_text`、清洗后的文本、`wer_errors`、`cer_errors`、`ref_words`
+和 `ref_chars`。
+
+如果 `text_process` 文本归一化在单独环境中，传入：
+
+```bash
+--text_normalize_python /path/to/wetext/bin/python
+```
+
+多 GPU 五套集评测可以使用开源化后的 launcher，不包含任何硬编码数据路径：
+
+```bash
+MODEL_PATH=/path/to/exported_or_checkpoint_model \
+EVAL_DATA_DIR=/path/to/eval_jsonl_dir \
+OUTPUT_DIR=runs/eval/arkasr_step30000 \
+SUFFIX=step30000 \
+GPUS="0 1 2 3 4" \
+PRESETS="aishell clean meeting net other" \
+scripts/eval/run_arkasr_eval.sh
+```
+
+launcher 会读取 `EVAL_DATA_DIR` 下的 `test_${preset}.jsonl`，并把日志、pid
+和结果 JSONL 写到 `OUTPUT_DIR`。仓库不包含任何评测数据文件。
+
 ## 单机训练
 
 ```bash
@@ -203,7 +263,10 @@ torchrun --nproc_per_node 8 scripts/train/train_ark_asr_opd_fsdp2_resume.py \
 
 ```bash
 python3 -m py_compile scripts/train/train_ark_asr_opd_fsdp2_resume.py
+python3 -m py_compile scripts/infer/ark_asr_transformers.py
+python3 -m py_compile scripts/eval/eval_jwer_ark_asr_transformers.py
 bash -n scripts/run/run_ark_asr_opd_fsdp2_resume_hostfile.sh
+bash -n scripts/eval/run_arkasr_eval.sh
 python scripts/train/train_ark_asr_opd_fsdp2_resume.py --help
 ```
 

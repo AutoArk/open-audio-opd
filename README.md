@@ -108,6 +108,70 @@ Fields:
 The script fails on missing audio paths. It does not silently replace bad
 samples with fallback audio.
 
+## Inference
+
+Run ASR inference without scoring:
+
+```bash
+python scripts/infer/ark_asr_transformers.py \
+  --input /path/to/input.jsonl \
+  --output runs/infer/predictions.jsonl \
+  --model_path /path/to/student_or_exported_model \
+  --processor_path /path/to/student_or_exported_model \
+  --batch_size 40 \
+  --dtype float16 \
+  --attn_impl sdpa
+```
+
+The output JSONL preserves input metadata and adds:
+
+- `pred_text`: cleaned prediction text used by downstream eval.
+- `pred_text_raw`: raw decoded generation before cleanup.
+
+## Evaluation
+
+Run J/WER evaluation for one JSONL file:
+
+```bash
+python scripts/eval/eval_jwer_ark_asr_transformers.py \
+  --input /path/to/test_aishell.jsonl \
+  --output runs/eval/test_aishell_result.jsonl \
+  --model_path /path/to/student_or_exported_model \
+  --processor_path /path/to/student_or_exported_model \
+  --batch_size 40 \
+  --dtype float16 \
+  --attn_impl sdpa
+```
+
+The eval output is sorted by `cer_errors` descending to make bad cases easy to
+inspect. Each row includes `ref_text`, `pred_text`, cleaned text fields,
+`wer_errors`, `cer_errors`, `ref_words`, and `ref_chars`.
+
+If your environment has the `text_process` normalizer in a separate Python env,
+pass:
+
+```bash
+--text_normalize_python /path/to/wetext/bin/python
+```
+
+For the five-preset multi-GPU evaluation pattern used by the internal
+`run_arkasr_step30000_eval.sh`, use the open-source launcher without hard-coded
+data paths:
+
+```bash
+MODEL_PATH=/path/to/exported_or_checkpoint_model \
+EVAL_DATA_DIR=/path/to/eval_jsonl_dir \
+OUTPUT_DIR=runs/eval/arkasr_step30000 \
+SUFFIX=step30000 \
+GPUS="0 1 2 3 4" \
+PRESETS="aishell clean meeting net other" \
+scripts/eval/run_arkasr_eval.sh
+```
+
+The launcher expects files named `test_${preset}.jsonl` under `EVAL_DATA_DIR`.
+It writes logs, pid files, and result JSONL files to `OUTPUT_DIR`. No eval data
+is included in this repository.
+
 ## Single-Node Training
 
 ```bash
@@ -216,7 +280,10 @@ These checks do not require model weights:
 
 ```bash
 python3 -m py_compile scripts/train/train_ark_asr_opd_fsdp2_resume.py
+python3 -m py_compile scripts/infer/ark_asr_transformers.py
+python3 -m py_compile scripts/eval/eval_jwer_ark_asr_transformers.py
 bash -n scripts/run/run_ark_asr_opd_fsdp2_resume_hostfile.sh
+bash -n scripts/eval/run_arkasr_eval.sh
 python scripts/train/train_ark_asr_opd_fsdp2_resume.py --help
 ```
 
