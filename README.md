@@ -1,13 +1,77 @@
 # open-audio-opd
 
-Clean-room audio online policy distillation framework.
+Industrial audio online policy distillation training code.
+
+中文文档: [README_zh.md](README_zh.md)
 
 `open-audio-opd` is an adapter-first project for online policy distillation on
 audio tasks. The first supported workflow is ASR OPD: a student ASR model
 generates a transcript from audio, a stronger teacher scores that transcript
 under the same audio condition, and the student is trained with sparse
-union-support KL. TTS support is coming soon through the same adapter and OPD
-loss interfaces.
+union-support KL. This repository also vendors the `verl` utilities needed by
+the production FSDP2 resume training script.
+
+This project is based on [THUNLP/OPD](https://github.com/thunlp/OPD/) and
+[verl](https://github.com/volcengine/verl).
+
+## Production ASR OPD Script
+
+The industrial training entrypoint is:
+
+```bash
+scripts/train/train_ark_asr_opd_fsdp2_resume.py
+```
+
+It uses the vendored `verl/` package for FSDP2 wrapping and checkpoint
+management. Model paths, data paths, output paths, and Qwen3-ASR backend code
+paths are explicit CLI arguments; private local defaults are intentionally not
+embedded.
+
+Minimal launch shape:
+
+```bash
+torchrun --nproc_per_node 8 scripts/train/train_ark_asr_opd_fsdp2_resume.py \
+  --student_model /path/to/student_model \
+  --teacher_model /path/to/qwen3_asr_model \
+  --qwen3_asr_code_path /path/to/qwen3-asr/backend \
+  --train_data /path/to/train.jsonl \
+  --output_dir runs/ark_asr_opd_fsdp2 \
+  --teacher_backend qwen3_asr_teacher_forcing \
+  --calibrate_only False \
+  --save_freq 1000
+```
+
+Multi-node hostfile launch:
+
+```bash
+HOSTFILE=/path/to/hostfile \
+STUDENT_MODEL=/path/to/student_model \
+TEACHER_MODEL=/path/to/qwen3_asr_model \
+QWEN3_ASR_CODE_PATH=/path/to/qwen3-asr/backend \
+TRAIN_DATA=/path/to/train.jsonl \
+OUTPUT_DIR=runs/ark_asr_opd_fsdp2 \
+scripts/run/run_ark_asr_opd_fsdp2_resume_hostfile.sh
+```
+
+Resume latest checkpoint:
+
+```bash
+torchrun --nproc_per_node 8 scripts/train/train_ark_asr_opd_fsdp2_resume.py \
+  --student_model /path/to/student_model \
+  --teacher_model /path/to/qwen3_asr_model \
+  --qwen3_asr_code_path /path/to/qwen3-asr/backend \
+  --train_data /path/to/train.jsonl \
+  --output_dir runs/ark_asr_opd_fsdp2 \
+  --resume_from_checkpoint latest \
+  --calibrate_only False
+```
+
+Expected JSONL fields:
+
+- `audio`: audio file path.
+- `text`: reference transcript.
+- `task`: optional, must be `asr` when present.
+- `begin_time` and `end_time`: optional segment boundaries in seconds.
 
 This repository is intentionally clean-room. It does not copy private training
 code or hard-code private model paths. Real models are connected through adapters.
