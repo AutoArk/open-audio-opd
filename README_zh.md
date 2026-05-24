@@ -17,6 +17,10 @@ scripts/train/train_ark_asr_opd_fsdp2_resume.py
 
 仓库不包含模型权重、音频文件、JSONL 数据集或私有机器路径。所有模型、数据和输出目录都需要显式传入。
 
+## 支持语言
+
+Ark-ASR 当前支持中文、英语、德语、日语、法语和韩语 ASR。
+
 ## TTS OPD
 
 TTS 的 on-policy distillation 方案即将开放。计划中的 TTS recipe 会复用在线

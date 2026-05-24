@@ -22,6 +22,11 @@ and checkpoint management without depending on another local checkout.
 No model weights, audio files, JSONL datasets, or private machine paths are
 included. All model/data/output paths are explicit command-line arguments.
 
+## Supported Languages
+
+Ark-ASR currently supports Chinese, English, German, Japanese, French, and
+Korean ASR.
+
 ## TTS OPD
 
 TTS on-policy distillation support is coming soon. The planned TTS recipe will
