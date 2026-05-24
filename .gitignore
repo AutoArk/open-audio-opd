@@ -9,3 +9,6 @@ build/
 *.egg-info/
 runs/
 .DS_Store
+
+# Generated paper artifacts
+paper/arxiv_ark_asr_opd/main.pdf

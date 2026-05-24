@@ -17,6 +17,47 @@ scripts/train/train_ark_asr_opd_fsdp2_resume.py
 
 仓库不包含模型权重、音频文件、JSONL 数据集或私有机器路径。所有模型、数据和输出目录都需要显式传入。
 
+## 实验结果
+
+Ark-ASR 是 0.6B 参数规模的 ASR student 模型。本组 OPD 实验只使用了 10 万小时
+ASR 音频数据。公开的 Qwen3-ASR technical report 没有披露实际 wall-clock 训练耗时，
+但披露了 Qwen3-ASR 采用多阶段训练流程，其中仅 AuT encoder 预训练阶段就使用约
+4000 万小时伪标注 ASR 音频数据，之后还包括 Omni training、ASR SFT 和 ASR RL。
+在这个对比下，Ark-ASR 使用的数据规模约为 Qwen3-ASR 公开披露 ASR 预训练音频规模的
+1/400，却已经达到与 Qwen3-ASR-0.6B baseline 可比甚至更优的水平。
+
+`Ark-Base` 表示在 10 万小时 ASR 数据上 SFT 得到的 0.6B checkpoint。`TD`
+表示 teacher-data adaptation，即在 Ark-Base 上用 2000 小时 teacher-generated
+ASR 数据做适配。`OPD` 表示使用 Qwen-ASR teacher 的 on-policy distillation。
+
+| 模型 | aishell-1 (CER) | Wenet-meeting (CER) | Wenet-net (CER) | Libri-clean (WER) | Libri-other (WER) |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Ark-Base (0.6B) | 3.48% | 10.22% | 7.74% | 3.75% | 7.17% |
+| Ark-Base+OPD (0.6B) | 3.00% | 7.18% | 6.13% | 2.88% | 5.50% |
+| Ark-Base+TD+OPD (0.6B) | 1.94% | 6.11% | 5.41% | 2.77% | 4.88% |
+| Qwen3-ASR-1.7B | 1.50% | 4.69% | 4.55% | 2.20% | 4.05% |
+| Qwen3-ASR-0.6B | 2.07% | 5.57% | 5.45% | 2.81% | 5.05% |
+
+CER/WER 越低越好。
+
+主要结论：
+
+- Ark-ASR 只使用 10 万小时音频，就已经达到与 Qwen3-ASR 大规模训练体系可对比的水平，
+  体现了 OPD 路线在数据效率上的优势。
+- Ark-Base 是直接的 10 万小时监督微调基线。在同一个 0.6B student 上继续引入 OPD 后，
+  所有评测集都明显优于 Ark-Base，说明 OPD 能在标准 SFT 之外进一步迁移 teacher 的 ASR 能力。
+- Ark-Base+OPD 从 Ark-Base 出发，再用 Qwen-ASR teacher 在同一数据集上进行 OPD。
+  这个版本在 LibriSpeech clean/other 上已经接近 Qwen3-ASR-0.6B，说明在远小于 4000
+  万小时公开预训练规模的数据条件下，OPD 仍然能有效迁移 ASR 能力。
+- Ark-Base+TD+OPD 是更优路线：aishell-1 从 3.00% CER 提升到 1.94%，Wenet-meeting
+  从 7.18% CER 提升到 6.11%，Wenet-net 从 6.13% CER 提升到 5.41%，Libri-clean
+  从 2.88% WER 提升到 2.77%，Libri-other 从 5.50% WER 提升到 4.88%。
+- 在同为 0.6B 参数规模的对比下，Ark-Base+TD+OPD 整体已经超过 Qwen3-ASR-0.6B，
+  在 aishell-1、Wenet-net、Libri-clean、Libri-other 上均取得更好结果。
+- Qwen3-ASR-1.7B 仍是表中最强模型，但它参数规模更大，且背后是更大规模的公开训练流程。
+  当前结果说明，TD + OPD 能用 10 万小时数据把 0.6B ASR 模型推到接近
+  大模型基线的水平，是一条高数据效率的训练路径。
+
 ## 训练在做什么
 
 ASR OPD 的训练流程是：

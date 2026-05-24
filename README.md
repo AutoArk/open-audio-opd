@@ -22,6 +22,56 @@ and checkpoint management without depending on another local checkout.
 No model weights, audio files, JSONL datasets, or private machine paths are
 included. All model/data/output paths are explicit command-line arguments.
 
+## Experimental Results
+
+Ark-ASR is a 0.6B-parameter ASR student model. These OPD experiments use only
+100k hours of ASR audio. Public Qwen3-ASR technical-report material does not
+disclose the wall-clock training time, but it reports that Qwen3-ASR uses a
+multi-stage training pipeline whose AuT encoder pretraining stage alone uses
+about 40M hours of pseudo-labeled ASR audio, followed by Omni training, ASR SFT,
+and ASR RL. Under this comparison, Ark-ASR uses roughly 1/400 of the disclosed
+ASR pretraining audio scale while reaching a comparable level to the Qwen3-ASR
+0.6B baseline.
+
+`Ark-Base` denotes the 0.6B checkpoint obtained by SFT on the 100k-hour ASR
+dataset. `TD` denotes teacher-data adaptation using 2,000 hours of
+teacher-generated ASR data. `OPD` denotes on-policy distillation with the
+Qwen-ASR teacher.
+
+| Model | aishell-1 (CER) | Wenet-meeting (CER) | Wenet-net (CER) | Libri-clean (WER) | Libri-other (WER) |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Ark-Base (0.6B) | 3.48% | 10.22% | 7.74% | 3.75% | 7.17% |
+| Ark-Base+OPD (0.6B) | 3.00% | 7.18% | 6.13% | 2.88% | 5.50% |
+| Ark-Base+TD+OPD (0.6B) | 1.94% | 6.11% | 5.41% | 2.77% | 4.88% |
+| Qwen3-ASR-1.7B | 1.50% | 4.69% | 4.55% | 2.20% | 4.05% |
+| Qwen3-ASR-0.6B | 2.07% | 5.57% | 5.45% | 2.81% | 5.05% |
+
+Lower CER/WER is better.
+
+Key takeaways:
+
+- With only 100k hours of audio, Ark-ASR already reaches a competitive level
+  against Qwen3-ASR models trained with a much larger reported ASR data scale.
+- Ark-Base provides the direct 100k-hour supervised-training baseline. Applying
+  OPD on the same 0.6B student substantially improves every benchmark over
+  Ark-Base, showing that OPD transfers additional ASR capability beyond standard
+  supervised fine-tuning.
+- Ark-Base+OPD starts from Ark-Base and uses a Qwen-ASR teacher to run OPD on
+  the same dataset. This setting is already in the same broad performance band
+  as Qwen3-ASR-0.6B on LibriSpeech, showing that OPD can transfer substantial
+  ASR capability with far less data.
+- Ark-Base+TD+OPD is the stronger recipe. It improves Ark-ASR from 3.00% to
+  1.94% CER on aishell-1, from 7.18% to 6.11% CER on Wenet-meeting, from 6.13%
+  to 5.41% CER on Wenet-net, from 2.88% to 2.77% WER on Libri-clean, and from
+  5.50% to 4.88% WER on Libri-other.
+- At the same 0.6B scale, Ark-Base+TD+OPD is stronger overall than
+  Qwen3-ASR-0.6B, with better aishell-1, Wenet-net, Libri-clean, and Libri-other
+  results.
+- Qwen3-ASR-1.7B remains the strongest model in this table, but it is also a
+  larger model backed by a much larger reported training pipeline. The current
+  Ark-ASR result shows that the TD + OPD path is an efficient way
+  to push a 0.6B ASR model close to that frontier with only 100k hours of audio.
+
 ## What The Training Does
 
 ASR OPD trains a student ASR model using online rollouts and teacher scores:
