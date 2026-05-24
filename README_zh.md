@@ -17,6 +17,12 @@ scripts/train/train_ark_asr_opd_fsdp2_resume.py
 
 仓库不包含模型权重、音频文件、JSONL 数据集或私有机器路径。所有模型、数据和输出目录都需要显式传入。
 
+## TTS OPD
+
+TTS 的 on-policy distillation 方案即将开放。计划中的 TTS recipe 会复用在线
+student rollout 和 teacher scoring 的核心思路，并针对语音生成质量、对齐和
+acoustic-token 监督进行适配。
+
 ## 实验结果
 
 Ark-ASR 是 0.6B 参数规模的 ASR student 模型。本组 OPD 实验只使用了 10 万小时

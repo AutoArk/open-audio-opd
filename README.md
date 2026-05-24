@@ -22,6 +22,12 @@ and checkpoint management without depending on another local checkout.
 No model weights, audio files, JSONL datasets, or private machine paths are
 included. All model/data/output paths are explicit command-line arguments.
 
+## TTS OPD
+
+TTS on-policy distillation support is coming soon. The planned TTS recipe will
+reuse the same online student-rollout and teacher-scoring idea, adapted to
+speech generation quality, alignment, and acoustic-token supervision.
+
 ## Experimental Results
 
 Ark-ASR is a 0.6B-parameter ASR student model. These OPD experiments use only
