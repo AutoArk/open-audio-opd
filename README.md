@@ -48,7 +48,7 @@ Qwen-ASR teacher.
 | --- | ---: | ---: | ---: | ---: | ---: |
 | Ark-Base (0.6B) | 3.48% | 10.22% | 7.74% | 3.75% | 7.17% |
 | Ark-Base+OPD (0.6B) | 3.00% | 7.18% | 6.13% | 2.88% | 5.50% |
-| Ark-Base+TD+OPD (0.6B) | 1.94% | 6.11% | 5.41% | 2.77% | 4.88% |
+| Ark-Base+TD+OPD (0.6B) | 1.95% | 5.92% | 5.39% | 2.45% | 4.56% |
 | Qwen3-ASR-1.7B | 1.50% | 4.69% | 4.55% | 2.20% | 4.05% |
 | Qwen3-ASR-0.6B | 2.07% | 5.57% | 5.45% | 2.81% | 5.05% |
 
@@ -67,9 +67,9 @@ Key takeaways:
   as Qwen3-ASR-0.6B on LibriSpeech, showing that OPD can transfer substantial
   ASR capability with far less data.
 - Ark-Base+TD+OPD is the stronger recipe. It improves Ark-ASR from 3.00% to
-  1.94% CER on aishell-1, from 7.18% to 6.11% CER on Wenet-meeting, from 6.13%
-  to 5.41% CER on Wenet-net, from 2.88% to 2.77% WER on Libri-clean, and from
-  5.50% to 4.88% WER on Libri-other.
+  1.95% CER on aishell-1, from 7.18% to 5.92% CER on Wenet-meeting, from 6.13%
+  to 5.39% CER on Wenet-net, from 2.88% to 2.45% WER on Libri-clean, and from
+  5.50% to 4.56% WER on Libri-other.
 - At the same 0.6B scale, Ark-Base+TD+OPD is stronger overall than
   Qwen3-ASR-0.6B, with better aishell-1, Wenet-net, Libri-clean, and Libri-other
   results.

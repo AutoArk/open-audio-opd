@@ -40,7 +40,7 @@ ASR 数据做适配。`OPD` 表示使用 Qwen-ASR teacher 的 on-policy distilla
 | --- | ---: | ---: | ---: | ---: | ---: |
 | Ark-Base (0.6B) | 3.48% | 10.22% | 7.74% | 3.75% | 7.17% |
 | Ark-Base+OPD (0.6B) | 3.00% | 7.18% | 6.13% | 2.88% | 5.50% |
-| Ark-Base+TD+OPD (0.6B) | 1.94% | 6.11% | 5.41% | 2.77% | 4.88% |
+| Ark-Base+TD+OPD (0.6B) | 1.95% | 5.92% | 5.39% | 2.45% | 4.56% |
 | Qwen3-ASR-1.7B | 1.50% | 4.69% | 4.55% | 2.20% | 4.05% |
 | Qwen3-ASR-0.6B | 2.07% | 5.57% | 5.45% | 2.81% | 5.05% |
 
@@ -55,9 +55,9 @@ CER/WER 越低越好。
 - Ark-Base+OPD 从 Ark-Base 出发，再用 Qwen-ASR teacher 在同一数据集上进行 OPD。
   这个版本在 LibriSpeech clean/other 上已经接近 Qwen3-ASR-0.6B，说明在远小于 4000
   万小时公开预训练规模的数据条件下，OPD 仍然能有效迁移 ASR 能力。
-- Ark-Base+TD+OPD 是更优路线：aishell-1 从 3.00% CER 提升到 1.94%，Wenet-meeting
-  从 7.18% CER 提升到 6.11%，Wenet-net 从 6.13% CER 提升到 5.41%，Libri-clean
-  从 2.88% WER 提升到 2.77%，Libri-other 从 5.50% WER 提升到 4.88%。
+- Ark-Base+TD+OPD 是更优路线：aishell-1 从 3.00% CER 提升到 1.95%，Wenet-meeting
+  从 7.18% CER 提升到 5.92%，Wenet-net 从 6.13% CER 提升到 5.39%，Libri-clean
+  从 2.88% WER 提升到 2.45%，Libri-other 从 5.50% WER 提升到 4.56%。
 - 在同为 0.6B 参数规模的对比下，Ark-Base+TD+OPD 整体已经超过 Qwen3-ASR-0.6B，
   在 aishell-1、Wenet-net、Libri-clean、Libri-other 上均取得更好结果。
 - Qwen3-ASR-1.7B 仍是表中最强模型，但它参数规模更大，且背后是更大规模的公开训练流程。
