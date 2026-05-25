@@ -228,7 +228,67 @@ samples with fallback audio.
 
 ## Inference
 
-Run ASR inference without scoring:
+Run ASR inference with Hugging Face Transformers:
+
+```python
+import torch
+from transformers import AutoModelForCausalLM, AutoProcessor, AutoTokenizer
+
+model_path = "AutoArk-AI/ARK-ASR-0.6B"
+audio_path = "https://huggingface.co/datasets/hf-internal-testing/dummy-audio-samples/resolve/main/bcn_weather.mp3"
+
+device = "cuda" if torch.cuda.is_available() else "cpu"
+torch_dtype = torch.float16 if device == "cuda" else torch.float32
+
+processor = AutoProcessor.from_pretrained(model_path, trust_remote_code=True)
+tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
+model = AutoModelForCausalLM.from_pretrained(
+    model_path,
+    trust_remote_code=True,
+    torch_dtype=torch_dtype,
+    attn_implementation="sdpa",
+).to(device)
+
+conversation = [
+    {
+        "role": "user",
+        "content": [
+            {"type": "audio", "path": audio_path},
+            {"type": "text", "text": "Please transcribe this audio."},
+        ],
+    }
+]
+
+inputs = processor.apply_chat_template(
+    conversation,
+    add_generation_prompt=True,
+    return_tensors="pt",
+)
+inputs = inputs.to(device)
+if "audios" in inputs:
+    inputs["audios"] = inputs["audios"].to(dtype=torch_dtype)
+
+eos_token_ids = [tokenizer.eos_token_id]
+for token in ["<|user|>", "<|assistant|>", "<|im_end|>"]:
+    token_id = tokenizer.convert_tokens_to_ids(token)
+    if isinstance(token_id, int) and token_id >= 0:
+        eos_token_ids.append(token_id)
+
+outputs = model.generate(
+    **inputs,
+    do_sample=False,
+    max_new_tokens=256,
+    pad_token_id=tokenizer.pad_token_id,
+    eos_token_id=list(dict.fromkeys(eos_token_ids)),
+)
+decoded_outputs = tokenizer.batch_decode(
+    outputs[:, inputs.input_ids.shape[1] :],
+    skip_special_tokens=True,
+)
+print(decoded_outputs)
+```
+
+For batch JSONL inference, use:
 
 ```bash
 python scripts/infer/ark_asr_transformers.py \
@@ -240,11 +300,6 @@ python scripts/infer/ark_asr_transformers.py \
   --dtype float16 \
   --attn_impl sdpa
 ```
-
-The output JSONL preserves input metadata and adds:
-
-- `pred_text`: cleaned prediction text used by downstream eval.
-- `pred_text_raw`: raw decoded generation before cleanup.
 
 ## Evaluation
 

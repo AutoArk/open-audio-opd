@@ -297,7 +297,7 @@ class ArkAsrTransformerInferencer:
         max_new_tokens: int = 256,
         do_sample: bool = False,
         temperature: float | None = 0.5,
-        repetition_penalty: float | None = 1.4,
+        repetition_penalty: float | None = 1.0,
         audio_gain: float = 1.0,
     ) -> list[dict[str, Any]]:
         conversations = []
@@ -398,7 +398,7 @@ def add_common_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--max_new_tokens", type=int, default=256)
     parser.add_argument("--do_sample", action="store_true")
     parser.add_argument("--temperature", type=float, default=0.5)
-    parser.add_argument("--repetition_penalty", type=float, default=1.4)
+    parser.add_argument("--repetition_penalty", type=float, default=1.0)
     parser.add_argument("--target_sr", type=int, default=16000)
     parser.add_argument("--max_audio_seconds", type=int, default=40)
     parser.add_argument("--audio_gain", type=float, default=1.0)
