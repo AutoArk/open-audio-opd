@@ -1,48 +1,124 @@
-# open-audio-opd
+<div align="center">
 
-Industrial ASR online policy distillation training code.
+# open-audio-opd: Industrial Audio Online Policy Distillation
+
+**Industrial audio OPD training stack for ASR and TTS, distilling compact audio models from stronger teacher models.**
+
+[![GitHub](https://img.shields.io/badge/GitHub-open--audio--opd-black?style=for-the-badge&logo=github)](https://github.com/AutoArk/open-audio-opd)
+[![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-ARK--ASR--0.6B-yellow?style=for-the-badge)](https://huggingface.co/AutoArk-AI/ARK-ASR-0.6B)
+[![Paper](https://img.shields.io/badge/Paper-PDF-b31b1b?style=for-the-badge&logo=readthedocs)](paper/arxiv_ark_asr_opd/main.pdf)
+[![License](https://img.shields.io/badge/License-See%20LICENSE-blue?style=for-the-badge)](LICENSE)
 
 中文文档: [README_zh.md](README_zh.md)
 
-## Overview
+</div>
 
-`open-audio-opd` contains the production ASR OPD training stack used to
-distill an audio ASR student model from a stronger ASR teacher model. The core
-training script is:
+<details open>
+<summary><strong>Announcements</strong></summary>
 
-```bash
-scripts/train/train_ark_asr_opd_fsdp2_resume.py
-```
+<div style="max-height: 150px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; margin-top: 8px;">
+
+- **2026.05.25: open-audio-opd is available on GitHub.**
+  The repository contains the industrial ASR online policy distillation training stack with FSDP2 distributed training.
+
+- **2026.05.25: ARK-ASR-0.6B model weights are available.**
+  Download the compact ASR student checkpoint from [Hugging Face](https://huggingface.co/AutoArk-AI/ARK-ASR-0.6B).
+
+- **TTS OPD is on the roadmap.**
+  The planned TTS recipe will reuse online student rollout and teacher scoring, adapted for speech generation quality, alignment, and acoustic-token supervision.
+
+</div>
+
+</details>
+
+<br>
+
+## Abstract
+
+`open-audio-opd` contains the production audio online policy distillation
+(OPD) stack used to distill compact audio models from stronger teacher models.
+The current release focuses on ASR: a student autoregressive ASR model rolls out
+transcripts on-policy, a stronger teacher scores the same audio and transcript,
+and the student is updated with token-level KL on the union top-k support.
 
 The repository is based on [THUNLP/OPD](https://github.com/thunlp/OPD/) and
 [verl](https://github.com/volcengine/verl). A trimmed vendored copy of `verl/`
 is included so the training script can use FSDP2 wrapping, gradient clipping,
 and checkpoint management without depending on another local checkout.
 
-No model weights, audio files, JSONL datasets, or private machine paths are
-included. All model/data/output paths are explicit command-line arguments.
+No audio files, JSONL datasets, or private machine paths are included. All
+model, data, and output paths are explicit command-line arguments. ASR model
+weights are released separately as
+[AutoArk-AI/ARK-ASR-0.6B](https://huggingface.co/AutoArk-AI/ARK-ASR-0.6B).
 
-## Supported Languages
+<br>
 
-Ark-ASR currently supports Chinese, English, German, Japanese, French, and
-Korean ASR.
+<div align="center" style="margin: 20px 0 24px;">
+  <img src="assets/opd_overview.png" width="92%" alt="Audio OPD training overview" style="border: 1px solid #e5e7eb; border-radius: 8px;"/>
+  <br>
+  <sub><strong>Figure 1.</strong> Audio OPD trains a compact student from online rollouts and teacher scoring over union top-k token support.</sub>
+</div>
 
-## TTS OPD
+<br>
 
-TTS on-policy distillation support is coming soon. The planned TTS recipe will
-reuse the same online student-rollout and teacher-scoring idea, adapted to
-speech generation quality, alignment, and acoustic-token supervision.
+<div align="center">
+
+[Roadmap](#roadmap) · [Model Release](#model-release) · [Experimental Results](#experimental-results) · [Training Method](#training-method) · [Install](#install) · [Inference](#inference) · [Evaluation](#evaluation) · [Training](#single-node-training)
+
+</div>
+
+## Roadmap
+
+| Category | Item | Status |
+| :--- | :--- | :---: |
+| **ASR OPD** | FSDP2 online policy distillation trainer | Done |
+| | Qwen3-ASR-style teacher scoring backend | Done |
+| | Resumeable FSDP2 checkpointing | Done |
+| | Multi-node hostfile launcher | Done |
+| | ASR inference and J/WER evaluation scripts | Done |
+| **Model Releases** | [ARK-ASR-0.6B](https://huggingface.co/AutoArk-AI/ARK-ASR-0.6B) | Done |
+| **TTS OPD** | Online rollout and teacher-scoring recipe | Planned |
+| | Speech generation quality and alignment objectives | Planned |
+| | Acoustic-token supervision support | Planned |
+
+## Model Release
+
+<div align="center">
+
+| | ARK-ASR-0.6B |
+| :--- | :--- |
+| **Checkpoint** | [AutoArk-AI/ARK-ASR-0.6B](https://huggingface.co/AutoArk-AI/ARK-ASR-0.6B) |
+| **Task** | Autoregressive ASR |
+| **Languages** | Chinese, English, German, Japanese, French, Korean |
+| **Training recipe** | SFT baseline plus teacher-data adaptation and OPD |
+| **Repository use** | Inference, evaluation, and OPD continued training workflows |
+
+</div>
+
+## Repository Layout
+
+```text
+scripts/train/train_ark_asr_opd_fsdp2_resume.py      # main FSDP2 ASR OPD trainer
+scripts/run/run_ark_asr_opd_fsdp2_resume_hostfile.sh # multi-node launcher
+scripts/infer/ark_asr_transformers.py                # ASR inference
+scripts/eval/eval_jwer_ark_asr_transformers.py       # J/WER evaluation
+scripts/eval/run_arkasr_eval.sh                      # multi-GPU evaluation launcher
+configs/hostfile.example                             # hostfile format example
+paper/arxiv_ark_asr_opd/main.pdf                     # paper PDF
+assets/opd_overview.png                              # OPD overview figure
+verl/                                                # vendored verl runtime code
+README.md / README_zh.md                             # usage docs
+```
 
 ## Experimental Results
 
 Ark-ASR is a 0.6B-parameter ASR student model. These OPD experiments use only
-100k hours of ASR audio. Public Qwen3-ASR technical-report material does not
-disclose the wall-clock training time, but it reports that Qwen3-ASR uses a
-multi-stage training pipeline whose AuT encoder pretraining stage alone uses
-about 40M hours of pseudo-labeled ASR audio, followed by Omni training, ASR SFT,
-and ASR RL. Under this comparison, Ark-ASR uses roughly 1/400 of the disclosed
-ASR pretraining audio scale while reaching a comparable level to the Qwen3-ASR
-0.6B baseline.
+100k hours of ASR audio. Public Qwen3-ASR technical-report material reports
+that Qwen3-ASR uses a multi-stage training pipeline whose AuT encoder
+pretraining stage alone uses about 40M hours of pseudo-labeled ASR audio,
+followed by Omni training, ASR SFT, and ASR RL. Under this comparison, Ark-ASR
+uses roughly 1/400 of the disclosed ASR pretraining audio scale while reaching
+a comparable level to the Qwen3-ASR 0.6B baseline.
 
 `Ark-Base` denotes the 0.6B checkpoint obtained by SFT on the 100k-hour ASR
 dataset. `TD` denotes teacher-data adaptation using 2,000 hours of
@@ -61,29 +137,20 @@ Lower CER/WER is better.
 
 Key takeaways:
 
-- With only 100k hours of audio, Ark-ASR already reaches a competitive level
-  against Qwen3-ASR models trained with a much larger reported ASR data scale.
-- Ark-Base provides the direct 100k-hour supervised-training baseline. Applying
-  OPD on the same 0.6B student substantially improves every benchmark over
-  Ark-Base, showing that OPD transfers additional ASR capability beyond standard
-  supervised fine-tuning.
-- Ark-Base+OPD starts from Ark-Base and uses a Qwen-ASR teacher to run OPD on
-  the same dataset. This setting is already in the same broad performance band
-  as Qwen3-ASR-0.6B on LibriSpeech, showing that OPD can transfer substantial
-  ASR capability with far less data.
+- With only 100k hours of audio, Ark-ASR reaches a competitive level against
+  Qwen3-ASR models trained with a much larger reported ASR data scale.
+- Applying OPD on the same 0.6B student substantially improves every benchmark
+  over Ark-Base, showing that OPD transfers additional ASR capability beyond
+  standard supervised fine-tuning.
 - Ark-Base+TD+OPD is the stronger recipe. It improves Ark-ASR from 3.00% to
   1.95% CER on aishell-1, from 7.18% to 5.92% CER on Wenet-meeting, from 6.13%
   to 5.39% CER on Wenet-net, from 2.88% to 2.45% WER on Libri-clean, and from
   5.50% to 4.56% WER on Libri-other.
 - At the same 0.6B scale, Ark-Base+TD+OPD is stronger overall than
-  Qwen3-ASR-0.6B, with better aishell-1, Wenet-net, Libri-clean, and Libri-other
-  results.
-- Qwen3-ASR-1.7B remains the strongest model in this table, but it is also a
-  larger model backed by a much larger reported training pipeline. The current
-  Ark-ASR result shows that the TD + OPD path is an efficient way
-  to push a 0.6B ASR model close to that frontier with only 100k hours of audio.
+  Qwen3-ASR-0.6B, with better aishell-1, Wenet-net, Libri-clean, and
+  Libri-other results.
 
-## What The Training Does
+## Training Method
 
 ASR OPD trains a student ASR model using online rollouts and teacher scores:
 
@@ -101,7 +168,7 @@ The key point is that the teacher is not used to provide a static transcript
 label. It scores what the student actually generated online, so the student is
 trained on its own current behavior.
 
-## Student And Teacher
+### Student And Teacher
 
 `--student_model` is the trainable audio-capable ASR model. It must be loadable
 with `AutoModelForCausalLM.from_pretrained(..., trust_remote_code=True)` and its
@@ -118,16 +185,6 @@ eval mode and does not receive gradients. Supported teacher backends are:
 
 For `qwen3_asr_*` backends, pass `--qwen3_asr_code_path` to the local Qwen3-ASR
 Transformers backend code. That backend code is not vendored here.
-
-## Repository Layout
-
-```text
-scripts/train/train_ark_asr_opd_fsdp2_resume.py   # main FSDP2 ASR OPD trainer
-scripts/run/run_ark_asr_opd_fsdp2_resume_hostfile.sh  # multi-node launcher
-configs/hostfile.example                          # hostfile format example
-verl/                                             # vendored verl runtime code
-README.md / README_zh.md                          # usage docs
-```
 
 ## Install
 
@@ -177,8 +234,8 @@ Run ASR inference without scoring:
 python scripts/infer/ark_asr_transformers.py \
   --input /path/to/input.jsonl \
   --output runs/infer/predictions.jsonl \
-  --model_path /path/to/student_or_exported_model \
-  --processor_path /path/to/student_or_exported_model \
+  --model_path AutoArk-AI/ARK-ASR-0.6B \
+  --processor_path AutoArk-AI/ARK-ASR-0.6B \
   --batch_size 40 \
   --dtype float16 \
   --attn_impl sdpa
@@ -197,8 +254,8 @@ Run J/WER evaluation for one JSONL file:
 python scripts/eval/eval_jwer_ark_asr_transformers.py \
   --input /path/to/test_aishell.jsonl \
   --output runs/eval/test_aishell_result.jsonl \
-  --model_path /path/to/student_or_exported_model \
-  --processor_path /path/to/student_or_exported_model \
+  --model_path AutoArk-AI/ARK-ASR-0.6B \
+  --processor_path AutoArk-AI/ARK-ASR-0.6B \
   --batch_size 40 \
   --dtype float16 \
   --attn_impl sdpa
@@ -220,7 +277,7 @@ For the five-preset multi-GPU evaluation pattern used by the internal
 data paths:
 
 ```bash
-MODEL_PATH=/path/to/exported_or_checkpoint_model \
+MODEL_PATH=AutoArk-AI/ARK-ASR-0.6B \
 EVAL_DATA_DIR=/path/to/eval_jsonl_dir \
 OUTPUT_DIR=runs/eval/arkasr_step30000 \
 SUFFIX=step30000 \
@@ -237,7 +294,7 @@ is included in this repository.
 
 ```bash
 torchrun --nproc_per_node 8 scripts/train/train_ark_asr_opd_fsdp2_resume.py \
-  --student_model /path/to/student_model \
+  --student_model AutoArk-AI/ARK-ASR-0.6B \
   --teacher_model /path/to/qwen3_asr_model \
   --qwen3_asr_code_path /path/to/qwen3-asr/backend \
   --train_data /path/to/train.jsonl \
@@ -269,7 +326,7 @@ Launch:
 
 ```bash
 HOSTFILE=/path/to/hostfile \
-STUDENT_MODEL=/path/to/student_model \
+STUDENT_MODEL=AutoArk-AI/ARK-ASR-0.6B \
 TEACHER_MODEL=/path/to/qwen3_asr_model \
 QWEN3_ASR_CODE_PATH=/path/to/qwen3-asr/backend \
 TRAIN_DATA=/path/to/train.jsonl \
@@ -289,7 +346,7 @@ Resume a specific checkpoint:
 
 ```bash
 torchrun --nproc_per_node 8 scripts/train/train_ark_asr_opd_fsdp2_resume.py \
-  --student_model /path/to/student_model \
+  --student_model AutoArk-AI/ARK-ASR-0.6B \
   --teacher_model /path/to/qwen3_asr_model \
   --qwen3_asr_code_path /path/to/qwen3-asr/backend \
   --train_data /path/to/train.jsonl \
