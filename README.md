@@ -235,7 +235,7 @@ import torch
 from transformers import AutoModelForCausalLM, AutoProcessor, AutoTokenizer
 
 model_path = "AutoArk-AI/ARK-ASR-0.6B"
-audio_path = "https://huggingface.co/datasets/hf-internal-testing/dummy-audio-samples/resolve/main/bcn_weather.mp3"
+audio_path = "assets/libai.wav"
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 torch_dtype = torch.float16 if device == "cuda" else torch.float32
@@ -268,18 +268,14 @@ inputs = inputs.to(device)
 if "audios" in inputs:
     inputs["audios"] = inputs["audios"].to(dtype=torch_dtype)
 
-eos_token_ids = [tokenizer.eos_token_id]
-for token in ["<|user|>", "<|assistant|>", "<|im_end|>"]:
-    token_id = tokenizer.convert_tokens_to_ids(token)
-    if isinstance(token_id, int) and token_id >= 0:
-        eos_token_ids.append(token_id)
-
+bad_words_ids = [[token_id] for token_id in tokenizer.all_special_ids if token_id != tokenizer.eos_token_id]
 outputs = model.generate(
     **inputs,
     do_sample=False,
     max_new_tokens=256,
     pad_token_id=tokenizer.pad_token_id,
-    eos_token_id=list(dict.fromkeys(eos_token_ids)),
+    eos_token_id=tokenizer.eos_token_id,
+    bad_words_ids=bad_words_ids,
 )
 decoded_outputs = tokenizer.batch_decode(
     outputs[:, inputs.input_ids.shape[1] :],
