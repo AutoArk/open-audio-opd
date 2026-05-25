@@ -286,8 +286,6 @@ def make_role_labels(input_ids: torch.Tensor, attention_mask: torch.Tensor, user
                 continue
             tid = int(input_ids[i, j].item())
             if tid == user_id:
-                if is_training_turn:
-                    labels[i, j] = tid
                 is_training_turn = False
                 continue
             if tid == assistant_id:
@@ -330,6 +328,7 @@ class AsrCollator:
         self.bos_audio_token = getattr(processor, "bos_audio_token", "<|begin_of_audio|>")
         self.eos_audio_token = getattr(processor, "eos_audio_token", "<|end_of_audio|>")
         self.audio_token = getattr(processor, "audio_token", "<|audio|>")
+        self.assistant_end_token = getattr(processor, "assistant_end_token", "<|im_end|>")
         self.user_id = tokenizer.convert_tokens_to_ids(self.user_token)
         self.assistant_id = tokenizer.convert_tokens_to_ids(self.assistant_token)
 
@@ -424,7 +423,7 @@ class AsrCollator:
                 f"{ASR_INSTRUCTION}"
                 f"{self.assistant_token}"
             )
-            train_text = f"{prompt}{text}{self.user_token}"
+            train_text = f"{prompt}{text}{self.assistant_end_token}"
             train_ids = self.tokenizer(train_text, add_special_tokens=False)["input_ids"]
             gen_ids = self.tokenizer(prompt, add_special_tokens=False)["input_ids"]
             train_rows.append(torch.tensor(train_ids, dtype=torch.long))
