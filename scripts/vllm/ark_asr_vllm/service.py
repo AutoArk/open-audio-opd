@@ -15,6 +15,7 @@ from typing import Any
 
 import torch
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 
 from vllm import AsyncLLMEngine, SamplingParams, TokensPrompt
@@ -211,6 +212,12 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Ark-ASR vLLM ASR", lifespan=lifespan)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=os.getenv("ARK_ASR_CORS_ALLOW_ORIGINS", "*").split(","),
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 UI_HTML = r"""<!doctype html>

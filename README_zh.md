@@ -341,6 +341,9 @@ token masking，因此 `<|user|>`、`<|assistant|>`、`<|audio|>`、`<|begin_of_
 `<|end_of_audio|>` 等非 ASR 控制 token 会在解码时被屏蔽。`<|im_end|>` 保留为 stop token。
 更多适配说明见 `docs/ark_asr_vllm_adaptation.md`。
 
+本地浏览器测试页见 `tools/ark_asr_vllm_test.html`，默认连接
+`http://172.31.0.3:8025`，支持文件上传、麦克风录音、health 检查和 token mask 检查。
+
 ## 评测
 
 对单个 JSONL 文件运行 J/WER 评测：

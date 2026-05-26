@@ -354,6 +354,10 @@ tokens such as `<|user|>`, `<|assistant|>`, `<|audio|>`,
 `<|im_end|>` is kept as the stop token. Additional adaptation notes are in
 `docs/ark_asr_vllm_adaptation.md`.
 
+A local browser test page is available at `tools/ark_asr_vllm_test.html`. It
+defaults to `http://172.31.0.3:8025` and supports file upload, microphone
+recording, health checks, and token-mask checks.
+
 ## Evaluation
 
 Run J/WER evaluation for one JSONL file:

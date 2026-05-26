@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ark-ASR vLLM 接口测试</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --panel-2: #f9fafb;
+      --text: #111827;
+      --muted: #64748b;
+      --line: #d8dee9;
+      --accent: #0f766e;
+      --accent-2: #1d4ed8;
+      --danger: #b91c1c;
+      --ok: #047857;
+      --warn: #a16207;
+      --shadow: 0 14px 45px rgba(15, 23, 42, 0.10);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      background:
+        linear-gradient(120deg, rgba(15, 118, 110, 0.10), transparent 34%),
+        linear-gradient(240deg, rgba(29, 78, 216, 0.10), transparent 38%),
+        var(--bg);
+    }
+
+    main {
+      width: min(1180px, calc(100vw - 32px));
+      margin: 28px auto;
+    }
+
+    header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: clamp(26px, 4vw, 42px);
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .status-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      padding: 6px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.78);
+      color: var(--muted);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .badge.ok { color: var(--ok); border-color: rgba(4, 120, 87, 0.35); }
+    .badge.err { color: var(--danger); border-color: rgba(185, 28, 28, 0.35); }
+    .badge.warn { color: var(--warn); border-color: rgba(161, 98, 7, 0.35); }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(360px, 0.9fr) minmax(420px, 1.1fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    section {
+      background: var(--panel);
+      border: 1px solid rgba(216, 222, 233, 0.92);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px 16px 12px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 16px;
+      line-height: 1.3;
+    }
+
+    .panel-body {
+      padding: 16px;
+    }
+
+    label {
+      display: block;
+      margin: 0 0 7px;
+      color: #334155;
+      font-size: 13px;
+      font-weight: 650;
+    }
+
+    input,
+    select,
+    button,
+    textarea {
+      font: inherit;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      min-height: 40px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--text);
+      padding: 9px 10px;
+      outline: none;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: rgba(15, 118, 110, 0.78);
+      box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
+    }
+
+    input[type="file"] {
+      padding: 7px 10px;
+    }
+
+    .field {
+      margin-bottom: 13px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 9px;
+      margin-top: 14px;
+    }
+
+    button {
+      min-height: 40px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--text);
+      padding: 8px 11px;
+      cursor: pointer;
+      transition: transform 0.08s ease, background 0.12s ease, border-color 0.12s ease;
+    }
+
+    button:hover:not(:disabled) {
+      border-color: #94a3b8;
+      background: var(--panel-2);
+    }
+
+    button:active:not(:disabled) {
+      transform: translateY(1px);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.52;
+    }
+
+    .primary {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .primary:hover:not(:disabled) {
+      border-color: #115e59;
+      background: #115e59;
+    }
+
+    .secondary {
+      border-color: rgba(29, 78, 216, 0.35);
+      color: var(--accent-2);
+    }
+
+    audio {
+      display: block;
+      width: 100%;
+      margin-top: 14px;
+    }
+
+    .message {
+      margin-top: 12px;
+      min-height: 42px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--panel-2);
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+      overflow-wrap: anywhere;
+    }
+
+    .message.ok {
+      border-color: rgba(4, 120, 87, 0.24);
+      background: rgba(4, 120, 87, 0.07);
+      color: var(--ok);
+    }
+
+    .message.err {
+      border-color: rgba(185, 28, 28, 0.22);
+      background: rgba(185, 28, 28, 0.07);
+      color: var(--danger);
+    }
+
+    .message.warn {
+      border-color: rgba(161, 98, 7, 0.24);
+      background: rgba(161, 98, 7, 0.08);
+      color: var(--warn);
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--panel-2);
+      padding: 10px;
+    }
+
+    .metric b {
+      display: block;
+      margin-bottom: 3px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .metric span {
+      display: block;
+      min-height: 22px;
+      font-size: 18px;
+      font-weight: 750;
+      overflow-wrap: anywhere;
+    }
+
+    .transcript {
+      min-height: 150px;
+      margin: 0 0 12px;
+      padding: 14px;
+      border: 1px solid rgba(15, 118, 110, 0.24);
+      border-radius: 8px;
+      background: rgba(15, 118, 110, 0.06);
+      font-size: 20px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    pre {
+      min-height: 220px;
+      max-height: 430px;
+      margin: 0;
+      overflow: auto;
+      padding: 13px;
+      border: 1px solid #1f2937;
+      border-radius: 8px;
+      background: #111827;
+      color: #dbeafe;
+      font-size: 12px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .mask-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .token {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+      padding: 9px;
+      font-size: 12px;
+    }
+
+    .token code {
+      display: block;
+      margin-bottom: 5px;
+      color: #0f172a;
+      overflow-wrap: anywhere;
+    }
+
+    .token.ok { border-color: rgba(4, 120, 87, 0.35); }
+    .token.bad { border-color: rgba(185, 28, 28, 0.35); }
+
+    @media (max-width: 900px) {
+      main { width: min(100vw - 20px, 760px); margin: 16px auto; }
+      header { align-items: flex-start; flex-direction: column; }
+      .status-strip { justify-content: flex-start; }
+      .layout { grid-template-columns: 1fr; }
+      .grid-3,
+      .metrics,
+      .mask-grid { grid-template-columns: 1fr; }
+      .buttons { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>Ark-ASR vLLM 接口测试</h1>
+        <p class="subtitle">本地 HTML 直接调用远端服务，默认地址为 http://172.31.0.3:8025。</p>
+      </div>
+      <div class="status-strip">
+        <span id="serviceBadge" class="badge">service: unchecked</span>
+        <span id="micBadge" class="badge">microphone: checking</span>
+        <span id="corsBadge" class="badge">cors: unknown</span>
+      </div>
+    </header>
+
+    <div class="layout">
+      <section>
+        <div class="panel-head">
+          <h2>输入</h2>
+          <button id="healthBtn" class="secondary" type="button">检查服务</button>
+        </div>
+        <div class="panel-body">
+          <div class="field">
+            <label for="baseUrl">服务地址</label>
+            <input id="baseUrl" type="url" value="http://172.31.0.3:8025" spellcheck="false" />
+          </div>
+
+          <div class="grid-3">
+            <div class="field">
+              <label for="endpoint">接口</label>
+              <select id="endpoint">
+                <option value="/asr">/asr</option>
+                <option value="/v1/audio/transcriptions">/v1/audio/transcriptions</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="beginTime">开始秒</label>
+              <input id="beginTime" type="number" value="-1" step="0.1" />
+            </div>
+            <div class="field">
+              <label for="endTime">结束秒</label>
+              <input id="endTime" type="number" value="-1" step="0.1" />
+            </div>
+          </div>
+
+          <div class="grid-3">
+            <div class="field">
+              <label for="maxTokens">最大 token</label>
+              <input id="maxTokens" type="number" value="256" min="1" max="2048" />
+            </div>
+            <div class="field">
+              <label for="fileInput">音频文件</label>
+              <input id="fileInput" type="file" accept="audio/*,.wav,.mp3,.m4a,.flac,.ogg,.webm" />
+            </div>
+            <div class="field">
+              <label for="modelName">OpenAI model</label>
+              <input id="modelName" type="text" value="ark-asr" />
+            </div>
+          </div>
+
+          <div class="buttons">
+            <button id="recordBtn" type="button">开始录音</button>
+            <button id="stopBtn" type="button" disabled>停止</button>
+            <button id="clearBtn" type="button">清空</button>
+            <button id="submitBtn" class="primary" type="button">转写</button>
+          </div>
+
+          <audio id="player" controls></audio>
+          <div id="inputStatus" class="message">请选择音频文件，或在安全上下文中使用麦克风录音。</div>
+        </div>
+      </section>
+
+      <section>
+        <div class="panel-head">
+          <h2>结果</h2>
+          <button id="maskBtn" class="secondary" type="button">检查 token mask</button>
+        </div>
+        <div class="panel-body">
+          <div class="metrics">
+            <div class="metric"><b>请求耗时</b><span id="clientLatency">-</span></div>
+            <div class="metric"><b>服务耗时</b><span id="serverLatency">-</span></div>
+            <div class="metric"><b>Prompt tokens</b><span id="promptTokens">-</span></div>
+          </div>
+
+          <div id="transcript" class="transcript">转写结果会显示在这里。</div>
+          <pre id="raw">{}</pre>
+          <div id="maskPanel" class="mask-grid"></div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    const baseUrl = $("baseUrl");
+    const endpoint = $("endpoint");
+    const beginTime = $("beginTime");
+    const endTime = $("endTime");
+    const maxTokens = $("maxTokens");
+    const fileInput = $("fileInput");
+    const modelName = $("modelName");
+    const recordBtn = $("recordBtn");
+    const stopBtn = $("stopBtn");
+    const clearBtn = $("clearBtn");
+    const submitBtn = $("submitBtn");
+    const healthBtn = $("healthBtn");
+    const maskBtn = $("maskBtn");
+    const player = $("player");
+    const inputStatus = $("inputStatus");
+    const serviceBadge = $("serviceBadge");
+    const micBadge = $("micBadge");
+    const corsBadge = $("corsBadge");
+    const clientLatency = $("clientLatency");
+    const serverLatency = $("serverLatency");
+    const promptTokens = $("promptTokens");
+    const transcript = $("transcript");
+    const raw = $("raw");
+    const maskPanel = $("maskPanel");
+
+    let selectedBlob = null;
+    let selectedName = "audio.webm";
+    let objectUrl = "";
+    let recorder = null;
+    let chunks = [];
+    let startedAt = 0;
+
+    function apiUrl(path) {
+      return `${baseUrl.value.replace(/\/+$/, "")}${path}`;
+    }
+
+    function setBadge(node, text, kind = "") {
+      node.textContent = text;
+      node.className = `badge${kind ? ` ${kind}` : ""}`;
+    }
+
+    function setMessage(text, kind = "") {
+      inputStatus.textContent = text;
+      inputStatus.className = `message${kind ? ` ${kind}` : ""}`;
+    }
+
+    function setAudio(blob, name) {
+      selectedBlob = blob;
+      selectedName = name || "audio.webm";
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      objectUrl = URL.createObjectURL(blob);
+      player.src = objectUrl;
+      setMessage(`${selectedName}，${Math.max(1, Math.round(blob.size / 1024))} KB`, "ok");
+    }
+
+    function renderJson(data) {
+      raw.textContent = JSON.stringify(data, null, 2);
+    }
+
+    function explainFetchError(error) {
+      const message = error && error.message ? error.message : String(error);
+      if (message.includes("Failed to fetch")) {
+        return "请求失败。常见原因：远端服务没有允许当前页面的 CORS、服务不可达，或浏览器拦截了跨源 HTTP 请求。";
+      }
+      return message;
+    }
+
+    function updateMicState() {
+      const secureEnough = window.isSecureContext || location.hostname === "127.0.0.1" || location.hostname === "localhost";
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setBadge(micBadge, "microphone: unavailable", "warn");
+        recordBtn.disabled = true;
+        if (!secureEnough) {
+          setMessage("当前页面不是安全上下文，浏览器不会暴露 getUserMedia。文件上传仍可测试接口；麦克风请用 https 或 http://127.0.0.1 打开本页面。", "warn");
+        }
+        return;
+      }
+      setBadge(micBadge, "microphone: ready", "ok");
+      recordBtn.disabled = false;
+    }
+
+    async function checkHealth() {
+      setBadge(serviceBadge, "service: checking");
+      setBadge(corsBadge, "cors: checking");
+      try {
+        const response = await fetch(apiUrl("/health"), { method: "GET" });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.detail || `HTTP ${response.status}`);
+        setBadge(serviceBadge, "service: ok", "ok");
+        setBadge(corsBadge, "cors: ok", "ok");
+        renderJson(data);
+      } catch (error) {
+        setBadge(serviceBadge, "service: failed", "err");
+        setBadge(corsBadge, "cors: blocked?", "warn");
+        renderJson({ error: explainFetchError(error) });
+      }
+    }
+
+    async function checkMask() {
+      maskBtn.disabled = true;
+      maskPanel.innerHTML = "";
+      try {
+        const response = await fetch(apiUrl("/token-mask"));
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.detail || `HTTP ${response.status}`);
+        renderJson(data);
+        const tokens = data.tokens || {};
+        for (const [token, meta] of Object.entries(tokens)) {
+          const div = document.createElement("div");
+          div.className = `token ${meta.blocked ? "bad" : "ok"}`;
+          div.innerHTML = `<code></code><div>id: ${meta.id}</div><div>${meta.blocked ? "blocked" : "allowed"}</div>`;
+          div.querySelector("code").textContent = token;
+          maskPanel.appendChild(div);
+        }
+      } catch (error) {
+        renderJson({ error: explainFetchError(error) });
+      } finally {
+        maskBtn.disabled = false;
+      }
+    }
+
+    fileInput.addEventListener("change", () => {
+      const file = fileInput.files && fileInput.files[0];
+      if (file) setAudio(file, file.name || "audio");
+    });
+
+    recordBtn.addEventListener("click", async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        chunks = [];
+        recorder = new MediaRecorder(stream);
+        recorder.ondataavailable = (event) => {
+          if (event.data && event.data.size > 0) chunks.push(event.data);
+        };
+        recorder.onstop = () => {
+          const mime = recorder.mimeType || "audio/webm";
+          const blob = new Blob(chunks, { type: mime });
+          stream.getTracks().forEach((track) => track.stop());
+          setAudio(blob, "microphone.webm");
+          recordBtn.disabled = false;
+          stopBtn.disabled = true;
+        };
+        startedAt = Date.now();
+        recorder.start();
+        recordBtn.disabled = true;
+        stopBtn.disabled = false;
+        setMessage("正在录音...", "");
+      } catch (error) {
+        setMessage(error.message || String(error), "err");
+      }
+    });
+
+    stopBtn.addEventListener("click", () => {
+      if (recorder && recorder.state !== "inactive") {
+        recorder.stop();
+        setMessage(`录音 ${Math.max(1, Math.round((Date.now() - startedAt) / 1000))} 秒`, "ok");
+      }
+    });
+
+    clearBtn.addEventListener("click", () => {
+      selectedBlob = null;
+      selectedName = "audio.webm";
+      fileInput.value = "";
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      objectUrl = "";
+      player.removeAttribute("src");
+      transcript.textContent = "转写结果会显示在这里。";
+      renderJson({});
+      clientLatency.textContent = "-";
+      serverLatency.textContent = "-";
+      promptTokens.textContent = "-";
+      maskPanel.innerHTML = "";
+      setMessage("请选择音频文件，或在安全上下文中使用麦克风录音。");
+    });
+
+    submitBtn.addEventListener("click", async () => {
+      if (!selectedBlob) {
+        setMessage("请先选择音频文件或录一段音频。", "err");
+        return;
+      }
+
+      submitBtn.disabled = true;
+      transcript.textContent = "转写中...";
+      renderJson({});
+      setMessage("正在上传并请求 ASR 服务...", "");
+      const started = performance.now();
+
+      try {
+        const form = new FormData();
+        form.append("file", selectedBlob, selectedName);
+
+        if (endpoint.value === "/asr") {
+          form.append("begin_time", beginTime.value || "-1");
+          form.append("end_time", endTime.value || "-1");
+          form.append("max_new_tokens", maxTokens.value || "256");
+        } else {
+          form.append("model", modelName.value || "ark-asr");
+        }
+
+        const response = await fetch(apiUrl(endpoint.value), {
+          method: "POST",
+          body: form,
+        });
+        const text = await response.text();
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch {
+          throw new Error(text || `HTTP ${response.status}`);
+        }
+        if (!response.ok) {
+          throw new Error(data.detail || `HTTP ${response.status}`);
+        }
+
+        const elapsed = (performance.now() - started) / 1000;
+        transcript.textContent = data.text || "(空结果)";
+        clientLatency.textContent = `${elapsed.toFixed(3)}s`;
+        serverLatency.textContent = data.latency_s == null ? "-" : `${Number(data.latency_s).toFixed(3)}s`;
+        promptTokens.textContent = data.prompt_tokens == null ? "-" : String(data.prompt_tokens);
+        renderJson(data);
+        setMessage(`完成：${selectedName}`, "ok");
+      } catch (error) {
+        const message = explainFetchError(error);
+        transcript.textContent = "";
+        renderJson({ error: message });
+        setMessage(message, "err");
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+
+    healthBtn.addEventListener("click", checkHealth);
+    maskBtn.addEventListener("click", checkMask);
+    baseUrl.addEventListener("change", checkHealth);
+
+    updateMicState();
+    checkHealth();
+  </script>
+</body>
+</html>
