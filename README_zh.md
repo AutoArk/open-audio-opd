@@ -169,6 +169,62 @@ python scripts/infer/ark_asr_transformers.py \
 - `pred_text`: 清洗后的预测文本；
 - `pred_text_raw`: 清洗前的原始 decode 文本。
 
+### vLLM 在线服务
+
+Ark-ASR 也可以通过 `scripts/vllm/ark_asr_vllm` 中的 vLLM 适配层部署为在线
+ASR 服务。`arki-dev-h20` 上已验证的运行环境是：
+
+```text
+/root/miniforge3/envs/asr_vlm
+Python 3.10
+PyTorch 2.9.0+cu128
+Transformers 4.57.3
+vLLM 0.12.0
+```
+
+启动在线服务：
+
+```bash
+cd /data/yumu/open-audio-opd
+GPU=2 PORT=8025 scripts/vllm/deploy_ark_asr_vllm_service.sh start
+```
+
+检查服务和 token mask：
+
+```bash
+scripts/vllm/deploy_ark_asr_vllm_service.sh status
+curl -sS http://127.0.0.1:8025/health
+curl -sS http://127.0.0.1:8025/token-mask
+```
+
+测试一次 ASR 请求：
+
+```bash
+curl -sS -X POST http://127.0.0.1:8025/asr \
+  -F file=@assets/libai.wav \
+  -F max_new_tokens=64
+```
+
+服务也提供 OpenAI 风格的转写接口：
+
+```bash
+curl -sS -X POST http://127.0.0.1:8025/v1/audio/transcriptions \
+  -F file=@assets/libai.wav \
+  -F model=ark-asr
+```
+
+停止服务：
+
+```bash
+scripts/vllm/deploy_ark_asr_vllm_service.sh stop
+```
+
+日志和 PID 文件写入 `runs/vllm/`。vLLM 服务在解码阶段使用 `allowed_token_ids`
+做硬屏蔽，因此 `<|user|>`、`<|assistant|>`、`<|audio|>`、
+`<|begin_of_audio|>`、`<|end_of_audio|>` 等非 ASR 控制 token 不会被生成；
+`<|im_end|>` 保留为停止 token。更多适配经验见
+`docs/ark_asr_vllm_adaptation.md`。
+
 ## 评测
 
 对单个 JSONL 运行 J/WER 评测：

@@ -297,6 +297,63 @@ python scripts/infer/ark_asr_transformers.py \
   --attn_impl sdpa
 ```
 
+### vLLM Online Service
+
+Ark-ASR can also be served with the vLLM adapter in `scripts/vllm/ark_asr_vllm`.
+The verified runtime on `arki-dev-h20` is:
+
+```text
+/root/miniforge3/envs/asr_vlm
+Python 3.10
+PyTorch 2.9.0+cu128
+Transformers 4.57.3
+vLLM 0.12.0
+```
+
+Start the online service:
+
+```bash
+cd /data/yumu/open-audio-opd
+GPU=2 PORT=8025 scripts/vllm/deploy_ark_asr_vllm_service.sh start
+```
+
+Check service status and token masking:
+
+```bash
+scripts/vllm/deploy_ark_asr_vllm_service.sh status
+curl -sS http://127.0.0.1:8025/health
+curl -sS http://127.0.0.1:8025/token-mask
+```
+
+Run one ASR request:
+
+```bash
+curl -sS -X POST http://127.0.0.1:8025/asr \
+  -F file=@assets/libai.wav \
+  -F max_new_tokens=64
+```
+
+The service also exposes an OpenAI-style endpoint:
+
+```bash
+curl -sS -X POST http://127.0.0.1:8025/v1/audio/transcriptions \
+  -F file=@assets/libai.wav \
+  -F model=ark-asr
+```
+
+Stop the service:
+
+```bash
+scripts/vllm/deploy_ark_asr_vllm_service.sh stop
+```
+
+Logs and PID files are written to `runs/vllm/`. The vLLM service applies
+generation-time token masking with `allowed_token_ids`, so non-ASR control
+tokens such as `<|user|>`, `<|assistant|>`, `<|audio|>`,
+`<|begin_of_audio|>`, and `<|end_of_audio|>` are blocked during decoding.
+`<|im_end|>` is kept as the stop token. Additional adaptation notes are in
+`docs/ark_asr_vllm_adaptation.md`.
+
 ## Evaluation
 
 Run J/WER evaluation for one JSONL file:
