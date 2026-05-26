@@ -405,6 +405,40 @@
             </div>
           </div>
 
+          <div class="grid-3">
+            <div class="field">
+              <label for="temperature">Temperature</label>
+              <input id="temperature" type="number" value="0" min="0" max="2" step="0.05" />
+            </div>
+            <div class="field">
+              <label for="topP">Top P</label>
+              <input id="topP" type="number" value="1" min="0" max="1" step="0.01" />
+            </div>
+            <div class="field">
+              <label for="topK">Top K</label>
+              <input id="topK" type="number" value="-1" min="-1" step="1" />
+            </div>
+          </div>
+
+          <div class="grid-3">
+            <div class="field">
+              <label for="repetitionPenalty">重复惩罚</label>
+              <input id="repetitionPenalty" type="number" value="1" min="0.1" max="2" step="0.05" />
+            </div>
+            <div class="field">
+              <label for="preset">参数预设</label>
+              <select id="preset">
+                <option value="deterministic">确定性 ASR</option>
+                <option value="mild">轻微采样</option>
+                <option value="creative">高随机性</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="samplingHint">当前配置</label>
+              <input id="samplingHint" type="text" value="temp 0 / top_p 1 / top_k -1 / rp 1" readonly />
+            </div>
+          </div>
+
           <div class="buttons">
             <button id="recordBtn" type="button">开始录音</button>
             <button id="stopBtn" type="button" disabled>停止</button>
@@ -445,6 +479,12 @@
     const beginTime = $("beginTime");
     const endTime = $("endTime");
     const maxTokens = $("maxTokens");
+    const temperature = $("temperature");
+    const topP = $("topP");
+    const topK = $("topK");
+    const repetitionPenalty = $("repetitionPenalty");
+    const preset = $("preset");
+    const samplingHint = $("samplingHint");
     const fileInput = $("fileInput");
     const modelName = $("modelName");
     const recordBtn = $("recordBtn");
@@ -497,6 +537,18 @@
 
     function renderJson(data) {
       raw.textContent = JSON.stringify(data, null, 2);
+    }
+
+    function updateSamplingHint() {
+      samplingHint.value = `temp ${temperature.value || "0"} / top_p ${topP.value || "1"} / top_k ${topK.value || "-1"} / rp ${repetitionPenalty.value || "1"}`;
+    }
+
+    function appendSamplingParams(form) {
+      form.append("max_new_tokens", maxTokens.value || "256");
+      form.append("temperature", temperature.value || "0");
+      form.append("top_p", topP.value || "1");
+      form.append("top_k", topK.value || "-1");
+      form.append("repetition_penalty", repetitionPenalty.value || "1");
     }
 
     function explainFetchError(error) {
@@ -634,9 +686,10 @@
         if (endpoint.value === "/asr") {
           form.append("begin_time", beginTime.value || "-1");
           form.append("end_time", endTime.value || "-1");
-          form.append("max_new_tokens", maxTokens.value || "256");
+          appendSamplingParams(form);
         } else {
           form.append("model", modelName.value || "ark-asr");
+          appendSamplingParams(form);
         }
 
         const response = await fetch(apiUrl(endpoint.value), {
@@ -674,7 +727,30 @@
     healthBtn.addEventListener("click", checkHealth);
     maskBtn.addEventListener("click", checkMask);
     baseUrl.addEventListener("change", checkHealth);
+    [temperature, topP, topK, repetitionPenalty].forEach((node) => {
+      node.addEventListener("input", updateSamplingHint);
+    });
+    preset.addEventListener("change", () => {
+      if (preset.value === "deterministic") {
+        temperature.value = "0";
+        topP.value = "1";
+        topK.value = "-1";
+        repetitionPenalty.value = "1";
+      } else if (preset.value === "mild") {
+        temperature.value = "0.2";
+        topP.value = "0.95";
+        topK.value = "50";
+        repetitionPenalty.value = "1";
+      } else {
+        temperature.value = "0.7";
+        topP.value = "0.9";
+        topK.value = "100";
+        repetitionPenalty.value = "1.05";
+      }
+      updateSamplingHint();
+    });
 
+    updateSamplingHint();
     updateMicState();
     checkHealth();
   </script>

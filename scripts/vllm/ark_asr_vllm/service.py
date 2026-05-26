@@ -642,10 +642,30 @@ def prepare_prompt(
     )
 
 
-async def run_generation(prompt: TokensPrompt, max_new_tokens: int) -> str:
+def clamp_sampling_value(name: str, value: float, minimum: float, maximum: float) -> float:
+    if value < minimum or value > maximum:
+        raise HTTPException(
+            status_code=400,
+            detail=f"{name} must be between {minimum} and {maximum}, got {value}",
+        )
+    return value
+
+
+async def run_generation(
+    prompt: TokensPrompt,
+    *,
+    max_new_tokens: int,
+    temperature: float,
+    top_p: float,
+    top_k: int,
+    repetition_penalty: float,
+) -> str:
     request_id = f"ark-asr-{uuid.uuid4().hex}"
     sampling_params = SamplingParams(
-        temperature=0.0,
+        temperature=temperature,
+        top_p=top_p,
+        top_k=top_k,
+        repetition_penalty=repetition_penalty,
         max_tokens=max_new_tokens,
         stop_token_ids=state.eos_token_ids,
         skip_special_tokens=False,
@@ -665,11 +685,24 @@ async def asr(
     begin_time: float = Form(-1),
     end_time: float = Form(-1),
     max_new_tokens: int | None = Form(None),
+    temperature: float = Form(0.0),
+    top_p: float = Form(1.0),
+    top_k: int = Form(-1),
+    repetition_penalty: float = Form(1.0),
 ) -> JSONResponse:
     suffix = Path(file.filename or "audio.wav").suffix or ".wav"
     started = time.perf_counter()
     tmp_path = ""
     try:
+        max_tokens = max_new_tokens or state.args.max_new_tokens
+        if max_tokens <= 0:
+            raise HTTPException(status_code=400, detail=f"max_new_tokens must be positive, got {max_tokens}")
+        temperature = clamp_sampling_value("temperature", temperature, 0.0, 2.0)
+        top_p = clamp_sampling_value("top_p", top_p, 0.0, 1.0)
+        if top_k < -1 or top_k == 0:
+            raise HTTPException(status_code=400, detail=f"top_k must be -1 or a positive integer, got {top_k}")
+        repetition_penalty = clamp_sampling_value("repetition_penalty", repetition_penalty, 0.1, 2.0)
+
         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
             tmp_path = tmp.name
             content = await file.read()
@@ -684,7 +717,11 @@ async def asr(
             )
         text = await run_generation(
             prompt,
-            max_new_tokens=max_new_tokens or state.args.max_new_tokens,
+            max_new_tokens=max_tokens,
+            temperature=temperature,
+            top_p=top_p,
+            top_k=top_k,
+            repetition_penalty=repetition_penalty,
         )
         latency = time.perf_counter() - started
         return JSONResponse(
@@ -692,8 +729,17 @@ async def asr(
                 "text": text,
                 "latency_s": latency,
                 "prompt_tokens": len(prompt["prompt_token_ids"]),
+                "sampling": {
+                    "max_new_tokens": max_tokens,
+                    "temperature": temperature,
+                    "top_p": top_p,
+                    "top_k": top_k,
+                    "repetition_penalty": repetition_penalty,
+                },
             }
         )
+    except HTTPException:
+        raise
     except Exception as exc:
         logger.exception("ASR request failed")
         detail = f"{exc.__class__.__name__}: {exc}"
@@ -714,9 +760,22 @@ async def openai_transcriptions(
     model: str | None = Form(None),
     response_format: str | None = Form(None),
     temperature: float | None = Form(None),
+    max_new_tokens: int | None = Form(None),
+    top_p: float = Form(1.0),
+    top_k: int = Form(-1),
+    repetition_penalty: float = Form(1.0),
 ) -> JSONResponse:
-    del model, response_format, temperature
-    return await asr(file=file, begin_time=-1, end_time=-1, max_new_tokens=None)
+    del model, response_format
+    return await asr(
+        file=file,
+        begin_time=-1,
+        end_time=-1,
+        max_new_tokens=max_new_tokens,
+        temperature=0.0 if temperature is None else temperature,
+        top_p=top_p,
+        top_k=top_k,
+        repetition_penalty=repetition_penalty,
+    )
 
 
 def main() -> None:
