@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-import io
 import logging
 import os
 import re
@@ -14,10 +13,9 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
-import soundfile as sf
 import torch
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
-from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 
 from vllm import AsyncLLMEngine, SamplingParams, TokensPrompt
 from vllm.engine.arg_utils import AsyncEngineArgs
@@ -215,9 +213,368 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Ark-ASR vLLM ASR", lifespan=lifespan)
 
 
+UI_HTML = r"""<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ark-ASR vLLM Test</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f7f8fa;
+      --panel: #ffffff;
+      --text: #1f2937;
+      --muted: #667085;
+      --line: #d9dee7;
+      --accent: #1769aa;
+      --accent-strong: #0f4f85;
+      --danger: #b42318;
+      --ok: #167647;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    main {
+      width: min(1040px, calc(100vw - 32px));
+      margin: 28px auto;
+    }
+    h1 {
+      margin: 0 0 18px;
+      font-size: 24px;
+      line-height: 1.2;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
+      gap: 16px;
+      align-items: start;
+    }
+    section {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+    }
+    h2 {
+      margin: 0 0 12px;
+      font-size: 15px;
+      line-height: 1.3;
+    }
+    label {
+      display: block;
+      margin: 12px 0 6px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 600;
+    }
+    input[type="file"],
+    input[type="number"],
+    input[type="text"] {
+      width: 100%;
+      min-height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 8px 10px;
+      background: #fff;
+      color: var(--text);
+      font-size: 14px;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    button {
+      min-height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 8px 12px;
+      background: #fff;
+      color: var(--text);
+      font-weight: 650;
+      cursor: pointer;
+    }
+    button.primary {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: #fff;
+    }
+    button.primary:hover { background: var(--accent-strong); }
+    button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+    audio {
+      width: 100%;
+      margin-top: 12px;
+    }
+    .status {
+      min-height: 22px;
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .status.ok { color: var(--ok); }
+    .status.err { color: var(--danger); }
+    .result {
+      min-height: 150px;
+      white-space: pre-wrap;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 12px;
+      background: #fbfcfe;
+      font-size: 16px;
+      line-height: 1.55;
+    }
+    pre {
+      overflow: auto;
+      min-height: 110px;
+      max-height: 320px;
+      margin: 12px 0 0;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #111827;
+      color: #e5e7eb;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .meta {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin: 0 0 12px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .pill {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 6px 9px;
+      background: #fff;
+    }
+    @media (max-width: 820px) {
+      main { width: min(100vw - 20px, 720px); margin: 16px auto; }
+      .grid { grid-template-columns: 1fr; }
+      .row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Ark-ASR vLLM Test</h1>
+    <div class="grid">
+      <section>
+        <h2>Input</h2>
+        <label for="endpoint">Endpoint</label>
+        <input id="endpoint" type="text" value="/asr" />
+
+        <label for="fileInput">Audio file</label>
+        <input id="fileInput" type="file" accept="audio/*,.wav,.mp3,.m4a,.flac,.ogg,.webm" />
+
+        <div class="row">
+          <div>
+            <label for="beginTime">Begin time</label>
+            <input id="beginTime" type="number" value="-1" step="0.1" />
+          </div>
+          <div>
+            <label for="endTime">End time</label>
+            <input id="endTime" type="number" value="-1" step="0.1" />
+          </div>
+          <div>
+            <label for="maxTokens">Max tokens</label>
+            <input id="maxTokens" type="number" value="256" min="1" max="2048" />
+          </div>
+        </div>
+
+        <div class="buttons">
+          <button id="recordBtn">Start recording</button>
+          <button id="stopBtn" disabled>Stop</button>
+          <button id="clearBtn">Clear</button>
+          <button id="submitBtn" class="primary">Transcribe</button>
+        </div>
+
+        <audio id="player" controls></audio>
+        <div id="inputStatus" class="status">No audio selected.</div>
+      </section>
+
+      <section>
+        <h2>Result</h2>
+        <div class="meta">
+          <div class="pill" id="latency">latency: -</div>
+          <div class="pill" id="promptTokens">prompt tokens: -</div>
+        </div>
+        <div id="result" class="result"></div>
+        <pre id="raw">{}</pre>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const fileInput = document.getElementById("fileInput");
+    const endpoint = document.getElementById("endpoint");
+    const beginTime = document.getElementById("beginTime");
+    const endTime = document.getElementById("endTime");
+    const maxTokens = document.getElementById("maxTokens");
+    const recordBtn = document.getElementById("recordBtn");
+    const stopBtn = document.getElementById("stopBtn");
+    const clearBtn = document.getElementById("clearBtn");
+    const submitBtn = document.getElementById("submitBtn");
+    const player = document.getElementById("player");
+    const inputStatus = document.getElementById("inputStatus");
+    const result = document.getElementById("result");
+    const raw = document.getElementById("raw");
+    const latency = document.getElementById("latency");
+    const promptTokens = document.getElementById("promptTokens");
+
+    let selectedBlob = null;
+    let selectedName = "audio.webm";
+    let objectUrl = "";
+    let recorder = null;
+    let chunks = [];
+    let startedAt = 0;
+
+    function setStatus(text, kind = "") {
+      inputStatus.textContent = text;
+      inputStatus.className = "status" + (kind ? " " + kind : "");
+    }
+
+    function setAudio(blob, name) {
+      selectedBlob = blob;
+      selectedName = name || "audio.webm";
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      objectUrl = URL.createObjectURL(blob);
+      player.src = objectUrl;
+      setStatus(`${selectedName} (${Math.round(blob.size / 1024)} KB)`, "ok");
+    }
+
+    fileInput.addEventListener("change", () => {
+      const file = fileInput.files && fileInput.files[0];
+      if (!file) return;
+      setAudio(file, file.name || "audio");
+    });
+
+    recordBtn.addEventListener("click", async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        chunks = [];
+        recorder = new MediaRecorder(stream);
+        recorder.ondataavailable = (event) => {
+          if (event.data && event.data.size > 0) chunks.push(event.data);
+        };
+        recorder.onstop = () => {
+          const mime = recorder.mimeType || "audio/webm";
+          const blob = new Blob(chunks, { type: mime });
+          stream.getTracks().forEach((track) => track.stop());
+          setAudio(blob, "microphone.webm");
+          recordBtn.disabled = false;
+          stopBtn.disabled = true;
+        };
+        startedAt = Date.now();
+        recorder.start();
+        recordBtn.disabled = true;
+        stopBtn.disabled = false;
+        setStatus("Recording...", "");
+      } catch (error) {
+        setStatus(error.message || String(error), "err");
+      }
+    });
+
+    stopBtn.addEventListener("click", () => {
+      if (recorder && recorder.state !== "inactive") {
+        recorder.stop();
+        setStatus(`Recorded ${Math.max(1, Math.round((Date.now() - startedAt) / 1000))}s`, "ok");
+      }
+    });
+
+    clearBtn.addEventListener("click", () => {
+      selectedBlob = null;
+      selectedName = "audio.webm";
+      fileInput.value = "";
+      player.removeAttribute("src");
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      objectUrl = "";
+      result.textContent = "";
+      raw.textContent = "{}";
+      latency.textContent = "latency: -";
+      promptTokens.textContent = "prompt tokens: -";
+      setStatus("No audio selected.");
+    });
+
+    submitBtn.addEventListener("click", async () => {
+      if (!selectedBlob) {
+        setStatus("Select a file or record from the microphone first.", "err");
+        return;
+      }
+      submitBtn.disabled = true;
+      setStatus("Uploading and transcribing...", "");
+      result.textContent = "";
+      raw.textContent = "{}";
+      const started = performance.now();
+      try {
+        const form = new FormData();
+        form.append("file", selectedBlob, selectedName);
+        form.append("begin_time", beginTime.value || "-1");
+        form.append("end_time", endTime.value || "-1");
+        form.append("max_new_tokens", maxTokens.value || "256");
+        const response = await fetch(endpoint.value || "/asr", {
+          method: "POST",
+          body: form,
+        });
+        const text = await response.text();
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch {
+          throw new Error(text || `HTTP ${response.status}`);
+        }
+        if (!response.ok) {
+          throw new Error(data.detail || `HTTP ${response.status}`);
+        }
+        result.textContent = data.text || "";
+        raw.textContent = JSON.stringify(data, null, 2);
+        latency.textContent = `latency: ${Number(data.latency_s || 0).toFixed(3)}s`;
+        promptTokens.textContent = `prompt tokens: ${data.prompt_tokens ?? "-"}`;
+        setStatus(`Done in ${((performance.now() - started) / 1000).toFixed(3)}s`, "ok");
+      } catch (error) {
+        result.textContent = "";
+        raw.textContent = JSON.stringify({ error: error.message || String(error) }, null, 2);
+        setStatus(error.message || String(error), "err");
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>"""
+
+
 @app.get("/health")
 async def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/", response_class=HTMLResponse)
+async def index() -> HTMLResponse:
+    return HTMLResponse(UI_HTML)
+
+
+@app.get("/ui", response_class=HTMLResponse)
+async def ui() -> HTMLResponse:
+    return HTMLResponse(UI_HTML)
 
 
 @app.get("/token-mask")
