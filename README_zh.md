@@ -111,22 +111,6 @@ verl/                                                # vendored verl runtime cod
 README.md / README_zh.md                             # usage docs
 ```
 
-## 引用
-
-如果你在工作中使用本仓库或 ARK-ASR，请引用：
-
-```bibtex
-@misc{lin2026dataefficientopd,
-  title={Data-Efficient On-Policy Distillation for Automatic Speech Recognition},
-  author={Lin, Yu and Wang, Yiming and Cai, Runyuan and Zeng, Xiaodong},
-  year={2026},
-  eprint={2605.28139},
-  archivePrefix={arXiv},
-  primaryClass={cs.AI},
-  url={https://arxiv.org/abs/2605.28139}
-}
-```
-
 ## 实验结果
 
 Ark-ASR 是 0.6B 参数规模的 ASR student 模型。本组 OPD 实验只使用了 10 万小时
@@ -517,3 +501,19 @@ python scripts/train/train_ark_asr_opd_fsdp2_resume.py --help
 
 最后的 `--help` 命令必须在已安装训练依赖的环境中运行，包括 `numpy`、`torch`、`datasets`、
 `transformers`、`omegaconf`，以及 `pyproject.toml` 中列出的 `verl` 依赖。
+
+## 引用
+
+如果你在工作中使用本仓库或 ARK-ASR，请引用：
+
+```bibtex
+@misc{lin2026dataefficientopd,
+  title={Data-Efficient On-Policy Distillation for Automatic Speech Recognition},
+  author={Lin, Yu and Wang, Yiming and Cai, Runyuan and Zeng, Xiaodong},
+  year={2026},
+  eprint={2605.28139},
+  archivePrefix={arXiv},
+  primaryClass={cs.AI},
+  url={https://arxiv.org/abs/2605.28139}
+}
+```

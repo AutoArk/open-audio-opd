@@ -113,22 +113,6 @@ verl/                                                # vendored verl runtime cod
 README.md / README_zh.md                             # usage docs
 ```
 
-## Citation
-
-If you use this repository or ARK-ASR in your work, please cite:
-
-```bibtex
-@misc{lin2026dataefficientopd,
-  title={Data-Efficient On-Policy Distillation for Automatic Speech Recognition},
-  author={Lin, Yu and Wang, Yiming and Cai, Runyuan and Zeng, Xiaodong},
-  year={2026},
-  eprint={2605.28139},
-  archivePrefix={arXiv},
-  primaryClass={cs.AI},
-  url={https://arxiv.org/abs/2605.28139}
-}
-```
-
 ## Experimental Results
 
 Ark-ASR is a 0.6B-parameter ASR student model. These OPD experiments use only
@@ -540,3 +524,19 @@ The final `--help` command must be run in an environment with the training
 dependencies installed, including `numpy`, `torch`, `datasets`,
 `transformers`, `omegaconf`, and the `verl` dependencies listed in
 `pyproject.toml`.
+
+## Citation
+
+If you use this repository or ARK-ASR in your work, please cite:
+
+```bibtex
+@misc{lin2026dataefficientopd,
+  title={Data-Efficient On-Policy Distillation for Automatic Speech Recognition},
+  author={Lin, Yu and Wang, Yiming and Cai, Runyuan and Zeng, Xiaodong},
+  year={2026},
+  eprint={2605.28139},
+  archivePrefix={arXiv},
+  primaryClass={cs.AI},
+  url={https://arxiv.org/abs/2605.28139}
+}
+```
