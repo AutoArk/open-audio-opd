@@ -6,7 +6,7 @@
 
 [![GitHub](https://img.shields.io/badge/GitHub-open--audio--opd-black?style=for-the-badge&logo=github)](https://github.com/AutoArk/open-audio-opd)
 [![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-ARK--ASR--0.6B-yellow?style=for-the-badge)](https://huggingface.co/AutoArk-AI/ARK-ASR-0.6B)
-[![Paper](https://img.shields.io/badge/Paper-PDF-b31b1b?style=for-the-badge&logo=readthedocs)](paper/arxiv_ark_asr_opd/main.pdf)
+[![Paper](https://img.shields.io/badge/arXiv-2605.28139-b31b1b?style=for-the-badge&logo=arxiv)](https://arxiv.org/abs/2605.28139)
 [![License](https://img.shields.io/badge/License-See%20LICENSE-blue?style=for-the-badge)](LICENSE)
 
 中文文档: [README_zh.md](README_zh.md)
@@ -17,6 +17,9 @@
 <summary><strong>Announcements</strong></summary>
 
 <div style="max-height: 150px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; margin-top: 8px;">
+
+- **2026.05.27: The ARK-ASR OPD paper is available on arXiv.**
+  Read [Data-Efficient On-Policy Distillation for Automatic Speech Recognition](https://arxiv.org/abs/2605.28139).
 
 - **2026.05.25: open-audio-opd is available on GitHub.**
   The repository contains the industrial ASR online policy distillation training stack with FSDP2 distributed training.
@@ -63,7 +66,7 @@ weights are released separately as
 
 <div align="center">
 
-[Roadmap](#roadmap) · [Model Release](#model-release) · [Experimental Results](#experimental-results) · [Training Method](#training-method) · [Install](#install) · [Inference](#inference) · [Evaluation](#evaluation) · [Training](#single-node-training)
+[Roadmap](#roadmap) · [Model Release](#model-release) · [Experimental Results](#experimental-results) · [Training Method](#training-method) · [Install](#install) · [Inference](#inference) · [Evaluation](#evaluation) · [Training](#single-node-training) · [Citation](#citation)
 
 </div>
 
@@ -104,10 +107,26 @@ scripts/infer/ark_asr_transformers.py                # ASR inference
 scripts/eval/eval_jwer_ark_asr_transformers.py       # J/WER evaluation
 scripts/eval/run_arkasr_eval.sh                      # multi-GPU evaluation launcher
 configs/hostfile.example                             # hostfile format example
-paper/arxiv_ark_asr_opd/main.pdf                     # paper PDF
+https://arxiv.org/abs/2605.28139                     # arXiv paper
 assets/opd_overview.png                              # OPD overview figure
 verl/                                                # vendored verl runtime code
 README.md / README_zh.md                             # usage docs
+```
+
+## Citation
+
+If you use this repository or ARK-ASR in your work, please cite:
+
+```bibtex
+@misc{lin2026dataefficientopd,
+  title={Data-Efficient On-Policy Distillation for Automatic Speech Recognition},
+  author={Lin, Yu and Wang, Yiming and Cai, Runyuan and Zeng, Xiaodong},
+  year={2026},
+  eprint={2605.28139},
+  archivePrefix={arXiv},
+  primaryClass={cs.AI},
+  url={https://arxiv.org/abs/2605.28139}
+}
 ```
 
 ## Experimental Results

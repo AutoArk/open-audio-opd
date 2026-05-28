@@ -6,7 +6,7 @@
 
 [![GitHub](https://img.shields.io/badge/GitHub-open--audio--opd-black?style=for-the-badge&logo=github)](https://github.com/AutoArk/open-audio-opd)
 [![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-ARK--ASR--0.6B-yellow?style=for-the-badge)](https://huggingface.co/AutoArk-AI/ARK-ASR-0.6B)
-[![Paper](https://img.shields.io/badge/Paper-PDF-b31b1b?style=for-the-badge&logo=readthedocs)](paper/arxiv_ark_asr_opd/main.pdf)
+[![Paper](https://img.shields.io/badge/arXiv-2605.28139-b31b1b?style=for-the-badge&logo=arxiv)](https://arxiv.org/abs/2605.28139)
 [![License](https://img.shields.io/badge/License-See%20LICENSE-blue?style=for-the-badge)](LICENSE)
 
 English docs: [README.md](README.md)
@@ -17,6 +17,9 @@ English docs: [README.md](README.md)
 <summary><strong>最新动态</strong></summary>
 
 <div style="max-height: 150px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; margin-top: 8px;">
+
+- **2026.05.27: ARK-ASR OPD 论文已上线 arXiv。**
+  阅读 [Data-Efficient On-Policy Distillation for Automatic Speech Recognition](https://arxiv.org/abs/2605.28139)。
 
 - **2026.05.25: open-audio-opd 已在 GitHub 开源。**
   仓库包含工业级 ASR 在线策略蒸馏训练栈，并支持 FSDP2 分布式训练。
@@ -61,7 +64,7 @@ checkout。
 
 <div align="center">
 
-[路线图](#路线图) · [模型发布](#模型发布) · [实验结果](#实验结果) · [训练方法](#训练方法) · [安装](#安装) · [推理](#推理) · [评测](#评测) · [训练](#单机训练)
+[路线图](#路线图) · [模型发布](#模型发布) · [实验结果](#实验结果) · [训练方法](#训练方法) · [安装](#安装) · [推理](#推理) · [评测](#评测) · [训练](#单机训练) · [引用](#引用)
 
 </div>
 
@@ -102,10 +105,26 @@ scripts/infer/ark_asr_transformers.py                # ASR inference
 scripts/eval/eval_jwer_ark_asr_transformers.py       # J/WER evaluation
 scripts/eval/run_arkasr_eval.sh                      # multi-GPU evaluation launcher
 configs/hostfile.example                             # hostfile format example
-paper/arxiv_ark_asr_opd/main.pdf                     # paper PDF
+https://arxiv.org/abs/2605.28139                     # arXiv paper
 assets/opd_overview.png                              # OPD overview figure
 verl/                                                # vendored verl runtime code
 README.md / README_zh.md                             # usage docs
+```
+
+## 引用
+
+如果你在工作中使用本仓库或 ARK-ASR，请引用：
+
+```bibtex
+@misc{lin2026dataefficientopd,
+  title={Data-Efficient On-Policy Distillation for Automatic Speech Recognition},
+  author={Lin, Yu and Wang, Yiming and Cai, Runyuan and Zeng, Xiaodong},
+  year={2026},
+  eprint={2605.28139},
+  archivePrefix={arXiv},
+  primaryClass={cs.AI},
+  url={https://arxiv.org/abs/2605.28139}
+}
 ```
 
 ## 实验结果
