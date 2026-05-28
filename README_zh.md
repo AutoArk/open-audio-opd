@@ -6,6 +6,7 @@
 
 [![GitHub](https://img.shields.io/badge/GitHub-open--audio--opd-black?style=for-the-badge&logo=github)](https://github.com/AutoArk/open-audio-opd)
 [![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-ARK--ASR--0.6B-yellow?style=for-the-badge)](https://huggingface.co/AutoArk-AI/ARK-ASR-0.6B)
+[![Online Demo](https://img.shields.io/badge/%F0%9F%A4%97%20Space-Online%20Demo-blue?style=for-the-badge)](https://huggingface.co/spaces/AutoArk-AI/Ark-ASR-0.6B)
 [![Paper](https://img.shields.io/badge/arXiv-2605.28139-b31b1b?style=for-the-badge&logo=arxiv)](https://arxiv.org/abs/2605.28139)
 [![License](https://img.shields.io/badge/License-See%20LICENSE-blue?style=for-the-badge)](LICENSE)
 
@@ -17,6 +18,9 @@ English docs: [README.md](README.md)
 <summary><strong>最新动态</strong></summary>
 
 <div style="max-height: 150px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; margin-top: 8px;">
+
+- **2026.05.28: ARK-ASR-0.6B 在线 Demo 已上线。**
+  可在 [Hugging Face Space](https://huggingface.co/spaces/AutoArk-AI/Ark-ASR-0.6B) 中直接体验 ASR 模型。
 
 - **2026.05.27: ARK-ASR OPD 论文已上线 arXiv。**
   阅读 [Data-Efficient On-Policy Distillation for Automatic Speech Recognition](https://arxiv.org/abs/2605.28139)。
